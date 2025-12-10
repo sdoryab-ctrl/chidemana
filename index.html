@@ -1,0 +1,2996 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>چیدمانا</title>
+  <style>
+    /* پایه */
+    html,body{
+      margin:0;
+      height:100%;
+      overflow:hidden;
+      background:#bcd2e8;
+      color:#fff;
+      font-family:sans-serif;
+    }
+    #canvas{width:100%;height:100%;display:block;}
+
+    /* نوار ابزار سمت راست (دسکتاپ) - باریک‌تر */
+    #toolbar{
+      position:absolute;
+      right:.6rem;
+      top:50%;
+      transform:translateY(-50%);
+      display:flex;
+      flex-direction:column;
+      gap:.5rem;
+      width:150px;
+      z-index:6;
+    }
+    .toolbtn{
+      background:#5eead4;
+      border:none;
+      border-radius:999px;
+      padding:.55rem .8rem;
+      font-weight:700;
+      color:#0b1020;
+      box-shadow:0 8px 20px rgba(94,234,212,.2);
+      cursor:pointer;
+      font-size:.9rem;
+    }
+    #toggleListBtn{display:none;} /* فقط در دسکتاپ مخفی، در موبایل نشون می‌دیم */
+    .panel{
+      background:#141a30;
+      border:1px solid #2b2f4a;
+      border-radius:12px;
+      padding:.5rem .55rem;
+      box-shadow:0 8px 24px rgba(0,0,0,.12);
+    }
+    #blockList{
+      width:100%;
+      height:160px;
+      background:#12162a;
+      color:#e6edf3;
+      border:1px solid #2b2f4a;
+      border-radius:10px;
+      padding:.25rem;
+      outline:none;
+      font-size:.9rem;
+    }
+    #renameRow{display:flex; gap:.35rem; margin-top:.4rem;}
+    #renameInput{
+      width:70px;
+      border:1px solid #2b2f4a;
+      border-radius:10px;
+      background:#12162a;
+      color:#e6edf3;
+      padding:.35rem .5rem;
+      outline:none;
+      font-size:.9rem;
+    }
+
+    /* حالت حرکت/چرخش (بالا-راست) */
+    #modeToolbar{
+      position:absolute;
+      top:.55rem;
+      right:.55rem;
+      display:flex;
+      gap:.35rem;
+      z-index:7;
+    }
+    .modebtn{
+      padding:.4rem .65rem;
+      border-radius:10px;
+      border:1px solid #2b2f4a;
+      background:#171d33;
+      color:#e6edf3;
+      font-size:.9rem;
+    }
+
+    /* نوار متریال – بالا-راست (باریک‌تر) */
+    #materialBar{
+      position:absolute;
+      top:3.2rem;
+      right:.55rem;
+      z-index:7;
+      display:flex;
+      flex-direction:column;
+      gap:.35rem;
+      background:#101628;
+      border:1px solid #5eead4;
+      border-radius:12px;
+      padding:.4rem .5rem;
+      box-shadow:0 10px 28px rgba(0,0,0,.22);
+      width:150px;
+      box-sizing:border-box;
+    }
+    #colorInput{
+      -webkit-appearance:none;
+      appearance:none;
+      width:100%;
+      height:30px;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+    }
+    #hexInput{
+      width:100%;
+      border:1px solid #2b2f4a;
+      border-radius:8px;
+      background:#12162a;
+      color:#e6edf3;
+      padding:.35rem .5rem;
+      outline:none;
+      font-family:monospace;
+      font-size:.85rem;
+      box-sizing:border-box;
+    }
+    #applyColorBtn{
+      background:#5eead4;
+      color:#0b1020;
+      border:none;
+      border-radius:999px;
+      padding:.35rem .5rem;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow:0 8px 20px rgba(94,234,212,.22);
+      font-size:.85rem;
+      width:100%;
+    }
+
+    /* نوار انتخاب نوع بلوک – کمی پایین‌تر از متریال */
+        #blockTypeBar{
+      position:absolute;
+      right:.55rem;
+      top:11.2rem;
+      z-index:7;
+      display:flex;
+      flex-direction:column;     /* 👈 لیبل بالا، آیکون‌ها زیرش */
+      align-items:flex-start;
+      gap:.35rem;
+      background:#101628;
+      border:1px solid #2b2f4a;
+      border-radius:12px;
+      padding:.35rem .5rem;
+      box-shadow:0 10px 28px rgba(0,0,0,.18);
+      font-size:.85rem;
+      color:#e6edf3;
+      width:170px;               /* کمی عریض‌تر */
+      box-sizing:border-box;
+    }
+
+
+    /* آیکون‌های نوع بلوک */
+        #blockTypeIcons{
+      display:flex;
+      flex-wrap:wrap;   /* 👈 آیکون‌ها اگر جا نشدن میرن خط بعدی */
+      gap:.25rem;
+    }
+
+    .blockTypeIcon{
+      width:32px;
+      height:32px;
+      padding:0;
+      border-radius:8px;
+      border:1px solid #2b2f4a;
+      background:#12162a;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+    }
+    .blockTypeIcon.active{
+      border-color:#5eead4;
+      box-shadow:0 0 0 1px rgba(94,234,212,.5);
+    }
+    .bt-box{
+      width:18px;
+      height:18px;
+      box-sizing:border-box;
+      border-radius:3px;
+    }
+    /* معمولی: چهار ضلع کامل */
+    .bt-full{
+      border:2px solid #5eead4;
+    }
+    /* بدون کف: سه ضلع بالا و طرفین */
+    .bt-no-bottom{
+      border-top:2px solid #5eead4;
+      border-left:2px solid #5eead4;
+      border-right:2px solid #5eead4;
+    }
+    /* بدون سقف: سه ضلع پایین و طرفین */
+    .bt-no-top{
+      border-bottom:2px solid #5eead4;
+      border-left:2px solid #5eead4;
+      border-right:2px solid #5eead4;
+    }
+    /* بدون صفحه راست ولی با ستون‌ها */
+    .bt-no-right{
+      border:2px solid #5eead4;
+      border-right:none;
+    }
+
+    /* بدون صفحات چپ و راست – فقط بالا و پایین (ستون‌های کناری در مدل سه‌بعدی) */
+    .bt-no-sides{
+      border-top:2px solid #5eead4;
+      border-bottom:2px solid #5eead4;
+    }
+
+  /* بدون کف با فریم کف – چهار ضلع باریک پایین */
+.bt-frame-bottom{
+  position: relative;
+  border:none;
+}
+
+/* آیکون پله (نمای شماتیک یک پله) */
+.bt-stair{
+  position:relative;
+  border:1px solid #5eead4;
+  background:transparent;
+}
+
+.bt-stair::before,
+.bt-stair::after{
+  content:"";
+  position:absolute;
+  background:#5eead4;
+  height:2px;
+}
+
+/* پله اول */
+.bt-stair::before{
+  width:70%;
+  bottom:2px;
+  left:2px;
+}
+
+/* پله دوم */
+.bt-stair::after{
+  width:40%;
+  bottom:8px;
+  left:2px;
+}
+
+
+
+.bt-frame-bottom::before,
+.bt-frame-bottom::after,
+.bt-frame-bottom div::before,
+.bt-frame-bottom div::after{
+  content:"";
+  position:absolute;
+  background:#5eead4;
+}
+/* خط جلو (لبه پایین) */
+.bt-frame-bottom::before{
+  height:2px;
+  width:100%;
+  bottom:0;
+  left:0;
+}
+/* خط عقب (لبه پایین کمی بالاتر) */
+.bt-frame-bottom::after{
+  height:2px;
+  width:100%;
+  bottom:0;
+  left:0;
+  transform:translateY(-3px);
+}
+/* خط سمت راست */
+.bt-frame-bottom div::before{
+  width:2px;
+  height:100%;
+  bottom:0;
+  right:0;
+}
+/* خط سمت چپ */
+.bt-frame-bottom div::after{
+  width:2px;
+  height:100%;
+  bottom:0;
+  left:0;
+}
+/* بدون سقف با فریم سقف – چهار ضلع باریک بالا */
+.bt-frame-top{
+  position: relative;
+  border:none;
+}
+.bt-frame-top::before,
+.bt-frame-top::after,
+.bt-frame-top div::before,
+.bt-frame-top div::after{
+  content:"";
+  position:absolute;
+  background:#5eead4;
+}
+/* خط جلو (لبه سقف) */
+.bt-frame-top::before{
+  height:2px;
+  width:100%;
+  top:0;
+  left:0;
+}
+/* خط عقب (لبه سقف کمی پایین‌تر) */
+.bt-frame-top::after{
+  height:2px;
+  width:100%;
+  top:0;
+  left:0;
+  transform:translateY(3px);
+}
+/* خط سمت راست */
+.bt-frame-top div::before{
+  width:2px;
+  height:100%;
+  top:0;
+  right:0;
+}
+/* خط سمت چپ */
+.bt-frame-top div::after{
+  width:2px;
+  height:100%;
+  top:0;
+  left:0;
+}
+
+
+
+    /* Undo/Redo بالا-چپ */
+    #historyBar{
+      position:absolute;
+      top:.55rem;
+      left:.55rem;
+      display:flex;
+      gap:.35rem;
+      z-index:7;
+    }
+    .histbtn{
+      padding:.4rem .65rem;
+      border-radius:10px;
+      border:1px solid #2b2f4a;
+      background:#171d33;
+      color:#e6edf3;
+      cursor:pointer;
+      box-shadow:0 6px 16px rgba(0,0,0,.12);
+      font-size:.85rem;
+    }
+    .histbtn:disabled{opacity:.45; cursor:not-allowed;}
+
+    /* پنل کنترل خورشید + خروجی – سمت چپ */
+    #sunPanel{
+      position:absolute;
+      left:.55rem;
+      top:50%;
+      transform:translateY(-50%);
+      width:220px;
+      display:flex;
+      flex-direction:column;
+      gap:.35rem;
+      z-index:6;
+    }
+    .sun-card{
+      background:#141a30;
+      border:1px solid #2b2f4a;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 8px 24px rgba(0,0,0,.12);
+    }
+    .sun-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:.6rem;
+      padding:.5rem .6rem;
+      cursor:pointer;
+      user-select:none;
+    }
+    .sun-title{font-weight:700; font-size:.9rem;}
+    .sun-chevron{transition:transform .2s ease;}
+    .sun-body{
+      padding:.5rem .6rem;
+      border-top:1px solid #2b2f4a;
+    }
+    .row{
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      margin-top:.3rem;
+    }
+    .row label{
+      min-width:70px;
+      color:#cbd5e1;
+      font-size:.86rem;
+    }
+    .row input[type="range"]{flex:1;}
+    .num{
+      width:60px;
+      border:1px solid #2b2f4a;
+      border-radius:8px;
+      background:#12162a;
+      color:#e6edf3;
+      padding:.3rem .45rem;
+      outline:none;
+      text-align:center;
+      font-size:.85rem;
+    }
+    .presetbar{
+      display:flex;
+      gap:.35rem;
+      margin-top:.35rem;
+      flex-wrap:wrap;
+    }
+    .presetbar button{
+      padding:.3rem .5rem;
+      border-radius:8px;
+      border:1px solid #2b2f4a;
+      background:#171d33;
+      color:#e6edf3;
+      cursor:pointer;
+      font-size:.8rem;
+    }
+    .collapsed .sun-body{display:none;}
+    .collapsed .sun-chevron{transform:rotate(180deg);}
+    #sunOnOffBtn{
+      padding:.3rem .6rem;
+      border-radius:8px;
+      border:1px solid #2b2f4a;
+      background:#171d33;
+      color:#e6edf3;
+      cursor:pointer;
+      font-size:.8rem;
+    }
+
+    /* جهت‌های دوربین – بالای وسط (دسکتاپ) */
+    #viewBar{
+      position:absolute;
+      top:.55rem;
+      left:50%;
+      transform:translateX(-50%);
+      display:flex;
+      gap:.35rem;
+      z-index:7;
+    }
+    .viewbtn{
+      padding:.4rem .65rem;
+      border-radius:10px;
+      border:1px solid #2b2f4a;
+      background:#171d33;
+      color:#e6edf3;
+      cursor:pointer;
+      box-shadow:0 6px 16px rgba(0,0,0,.12);
+      font-size:.85rem;
+    }
+
+    /* نوار مختصات انتخاب – داخل پنل لیست بلوک‌ها */
+    #coordsBar{
+      margin-top:.35rem;
+      background:rgba(11,16,32,.7);
+      border:1px solid #2b2f4a;
+      border-radius:999px;
+      padding:.25rem .5rem;
+      font-family:monospace;
+      font-size:.8rem;
+      box-shadow:0 4px 10px rgba(0,0,0,.1);
+      opacity:.95;
+      display:none;
+    }
+
+    /* نوار کنترل پلان (پایین-چپ) */
+    #planToggleBar{
+      position:absolute;
+      bottom:.9rem;
+      left:.9rem;
+      z-index:11;
+      display:flex;
+      gap:.25rem;
+      align-items:center;
+    }
+    #planToggleBtn,
+    #planZoomIn,
+    #planZoomOut{
+      padding:.28rem .55rem;
+      border-radius:999px;
+      border:1px solid #2b2f4a;
+      background:#0b1020;
+      color:#e6edf3;
+      font-size:.8rem;
+      opacity:.9;
+      cursor:pointer;
+    }
+    #planZoomIn,#planZoomOut{
+      width:26px;
+      text-align:center;
+      padding:.2rem 0;
+    }
+
+    /* نوار انتخاب طبقه برای پلان */
+    #planFloorBar{
+      position:absolute;
+      bottom:3.2rem;
+      left:.9rem;
+      z-index:11;
+      display:flex;
+      gap:.3rem;
+      align-items:center;
+      background:#0b1020;
+      border:1px solid #2b2f4a;
+      border-radius:999px;
+      padding:.25rem .6rem;
+      font-size:.8rem;
+      opacity:.9;
+    }
+    #planFloorBar select{
+      background:#12162a;
+      color:#e6edf3;
+      border:1px solid #2b2f4a;
+      border-radius:8px;
+      padding:.15rem .35rem;
+      font-size:.8rem;
+      outline:none;
+    }
+    #planFloorLabel{
+      font-size:.8rem;
+      color:#cbd5e1;
+    }
+
+    /* قطب‌نمای خیلی کوچک جهت شمال (همیشه روی صفحه) */
+#northIndicator{
+  position:absolute;
+  bottom:1rem;
+  right:1rem;   /* ✅ از گوشه راست استفاده می‌کنیم */
+  left:auto;
+  width:28px;
+  height:28px;
+  border-radius:999px;
+  border:1px solid #2b2f4a;
+  background:rgba(11,16,32,.9);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-size:.75rem;
+  color:#e6edf3;
+  z-index:12;
+  pointer-events:none;
+}
+#northIndicator .north-arrow{
+  width:0;
+  height:0;
+  border-left:5px solid transparent;
+  border-right:5px solid transparent;
+  border-bottom:10px solid #e6edf3;
+  transform-origin:50% 80%;
+  transform:translateY(1px) rotate(var(--north-rot, 0deg));
+}
+#northIndicator .north-label{
+  font-size:.6rem;
+  margin-top:1px;
+  opacity:.8;
+}
+
+
+    /* -------------------- ریسپانسیو -------------------- */
+    @media (max-width: 768px){
+      :root{--scale-small:.9;}
+
+      #modeToolbar,#historyBar,#materialBar,#blockTypeBar{transform-origin:top right;}
+      #modeToolbar{transform:scale(var(--scale-small)); right:.5rem; top:.5rem;}
+      #historyBar{transform:scale(var(--scale-small)); left:.5rem; top:.5rem;}
+      #materialBar{
+        transform:scale(var(--scale-small));
+        right:.5rem;
+        top:3rem;
+        gap:.35rem;
+        padding:.35rem .45rem;
+        width:180px;
+      }
+      #blockTypeBar{
+        right:.5rem;
+        top:11.4rem;
+        transform:scale(.9);
+        width:190px;
+      }
+      #colorInput{width:100%;height:28px;border-radius:8px;}
+      #hexInput{width:100%;padding:.3rem .45rem;font-size:.8rem;}
+      #applyColorBtn{padding:.35rem .6rem;font-size:.8rem;}
+
+      /* در موبایل، نوار جهت‌ها و وایرفریم اصلاً نمایش داده نشود */
+      #viewBar{
+        display:none !important;
+      }
+
+      /* نوار ابزار پایین موبایل */
+      #toolbar{
+        position:fixed;
+        left:calc(.5rem + env(safe-area-inset-left));
+        right:calc(.5rem + env(safe-area-inset-right));
+        bottom:calc(.5rem + env(safe-area-inset-bottom));
+        top:auto;
+        transform:none;
+        width:auto;
+        display:flex;
+        flex-direction:row;
+        align-items:stretch;
+        gap:.45rem;
+        z-index:10;
+        backdrop-filter: blur(4px);
+      }
+      .toolbtn{padding:.45rem .6rem; font-size:.8rem; white-space:nowrap;}
+      .panel{flex:1; padding:.4rem .45rem; border-radius:10px;}
+      #blockList{height:84px; padding:.2rem; font-size:.8rem;}
+
+      /* دکمه لیست فقط در موبایل */
+      #toggleListBtn{display:inline-block;}
+      #blockPanel{display:none;}
+
+      /* پنل خورشید + خروجی: بالای سمت چپ */
+      #sunPanel{
+        width:180px;
+        left:.5rem;
+        top:4.5rem;
+        bottom:auto;
+        transform:none;
+      }
+      .row label{min-width:64px;}
+      .num{width:56px;}
+
+      .viewbtn,.modebtn,.histbtn{padding:.32rem .55rem; font-size:.8rem;}
+
+      /* پلان و کنترل‌ها کمی بالاتر که با تولبار تداخل نداشته باشند */
+      #planToggleBar{
+        bottom:4.5rem;
+        left:.6rem;
+      }
+      #planFloorBar{
+        bottom:7.8rem;
+        left:.6rem;
+      }
+
+      /* روی موبایل، قطب‌نما کمی بالاتر از تولبار باشد */
+      #northIndicator{
+        bottom:8.7rem;
+        left:.9rem;
+left:auto;
+      }
+    }
+
+    @media (max-width:420px){
+      #materialBar{top:2.8rem;}
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <!-- قطب‌نمای کوچک جهت شمال -->
+  <div id="northIndicator">
+    <div class="north-arrow"></div>
+    <div class="north-label">N</div>
+  </div>
+
+  <!-- حالت حرکت/چرخش (بالا-راست) -->
+  <div id="modeToolbar">
+    <button id="modeMove" class="modebtn">حرکت (T)</button>
+    <button id="modeRotate" class="modebtn">چرخش (R)</button>
+  </div>
+
+  <!-- نوار متریال (بالا-راست) -->
+  <div id="materialBar">
+    <input id="colorInput" type="color" value="#27e1c1" />
+    <input id="hexInput" placeholder="#RRGGBB" value="#27e1c1" />
+    <button id="applyColorBtn">اعمال</button>
+  </div>
+
+  <!-- نوار انتخاب نوع بلوک با آیکون -->
+    <div id="blockTypeBar">
+    <span style="font-size:.8rem;">نوع بلوک:</span>
+    <div id="blockTypeIcons">
+      <button class="blockTypeIcon active" data-type="full" title="معمولی">
+        <div class="bt-box bt-full"></div>
+      </button>
+
+      <button class="blockTypeIcon" data-type="noBottom" title="بدون کف">
+        <div class="bt-box bt-no-bottom"></div>
+      </button>
+
+      <button class="blockTypeIcon" data-type="noTop" title="بدون سقف">
+        <div class="bt-box bt-no-top"></div>
+      </button>
+
+      <!-- 1) مثل معمولی ولی صفحه راست حذف، ستون‌ها سر جاش -->
+      <button class="blockTypeIcon" data-type="noRightWall" title="بدون صفحه راست (با ستون)">
+        <div class="bt-box bt-no-right"></div>
+      </button>
+
+      <!-- 2) مثل بالایی ولی هر دو صفحه چپ و راست حذف، فقط ستون‌ها -->
+      <button class="blockTypeIcon" data-type="sideColumns" title="فقط ستون‌های طرفین">
+        <div class="bt-box bt-no-sides"></div>
+      </button>
+
+      <!-- 3) مثل معمولی ولی کف حذف، فریم کف باقی -->
+      <button class="blockTypeIcon" data-type="floorFrame" title="بدون کف با فریم کف">
+        <div class="bt-box bt-frame-bottom"></div>
+      </button>
+
+      <!-- 4) برعکس قبلی: سقف حذف، فریم سقف باقی -->
+      <button class="blockTypeIcon" data-type="ceilingFrame" title="بدون سقف با فریم سقف">
+        <div class="bt-box bt-frame-top"></div>
+      </button>
+
+          <!-- پله -->
+<button class="blockTypeIcon" data-type="stair" title="پله">
+  <div class="bt-box bt-stair"></div>
+</button>
+
+    </div>
+  </div>
+
+
+  <!-- پنل کنترل خورشید + خروجی (جمع‌شونده) -->
+  <div id="sunPanel">
+    <!-- کارت نور خورشید -->
+    <div class="sun-card" id="sunCard">
+      <div class="sun-header" id="sunToggle">
+        <div class="sun-title">نور خورشید</div>
+        <div class="sun-chevron">▾</div>
+      </div>
+      <div class="sun-body" id="sunBody">
+        <div class="row">
+          <label>ارتفاع (°)</label>
+          <input id="elevRange" type="range" min="0" max="90" step="1">
+          <input id="elevNum" class="num" type="number" min="0" max="90" step="1">
+        </div>
+        <div class="row">
+          <label>آزیموت (°)</label>
+          <input id="azRange" type="range" min="0" max="360" step="1">
+          <input id="azNum" class="num" type="number" min="0" max="360" step="1">
+        </div>
+        <div class="row">
+          <label>خورشید</label>
+          <button id="sunOnOffBtn">خاموش</button>
+        </div>
+        <div class="presetbar">
+          <button data-e="10" data-a="90">صبح</button>
+          <button data-e="60" data-a="180">ظهر</button>
+          <button data-e="15" data-a="260">عصر</button>
+          <button data-e="3"  data-a="300">غروب</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- کارت خروجی تصویر دقیقا هم‌استایل نور خورشید -->
+    <div class="sun-card" id="renderPanel">
+      <div class="sun-header" id="renderToggle">
+        <div class="sun-title">خروجی تصویر</div>
+        <div class="sun-chevron">▾</div>
+      </div>
+      <div class="sun-body" id="renderBody">
+        <div class="row">
+          <label>کیفیت</label>
+          <select id="renderScale" class="num" style="width:100%;">
+            <option value="1">1x (معمولی)</option>
+            <option value="2" selected>2x (HD)</option>
+            <option value="3">3x (Ultra)</option>
+            <option value="4">4x (Max)</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label>فرمت</label>
+          <select id="renderFormat" class="num" style="width:100%;">
+            <option value="png" selected>PNG</option>
+            <option value="jpg">JPG</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label>پس‌زمینه</label>
+          <select id="renderBG" class="num" style="width:100%;">
+            <option value="solid" selected>ثابت</option>
+            <option value="transparent">شفاف</option>
+          </select>
+        </div>
+
+        <button id="renderDoBtn"
+                style="width:100%; margin-top:.35rem;
+                       padding:.45rem .5rem; border-radius:10px;
+                       border:none; background:#5eead4; color:#0b1020;
+                       font-weight:700; cursor:pointer; font-size:.85rem;">
+          📷 رندر تصویر
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نوار ابزار (دسکتاپ راست / موبایل پایین) -->
+  <div id="toolbar">
+  <button id="addBlockBtn" class="toolbtn">➕ افزودن</button>
+
+  
+  <button id="deleteBlockBtn" class="toolbtn" style="background:#f87171;color:#fff;">🗑️ حذف</button>
+  <button id="toggleListBtn" class="toolbtn">📋 لیست</button>
+
+    <div class="panel" id="blockPanel">
+      <div style="font-weight:700; margin-bottom:.35rem;">لیست بلوک‌ها</div>
+      <select id="blockList" size="8"></select>
+
+      <!-- مختصات بلوک انتخابی زیر لیست -->
+      <div id="coordsBar">X: 0.00 | Y: 0.00 | Z: 0.00</div>
+
+      <div id="renameRow">
+        <input id="renameInput" placeholder="نام جدید..." />
+        <button id="renameBtn" class="toolbtn" style="padding:.35rem .6rem;">تغییر نام</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Undo/Redo -->
+  <div id="historyBar">
+    <button id="undoBtn" class="histbtn" title="Ctrl+Z">↶ Undo</button>
+    <button id="redoBtn" class="histbtn" title="Ctrl+Y">↷ Redo</button>
+  </div>
+
+  <!-- جهت‌های دوربین + وایرفریم (در موبایل مخفی می‌شود) -->
+  <div id="viewBar">
+    <button class="viewbtn" data-dir="north">⬆ شمال</button>
+    <button class="viewbtn" data-dir="south">⬇ جنوب</button>
+    <button class="viewbtn" data-dir="east">➡ شرق</button>
+    <button class="viewbtn" data-dir="west">⬅ غرب</button>
+    <button id="wireframeBtn" class="viewbtn">وایرفریم</button>
+  </div>
+
+  <!-- کنترل پلان -->
+  <div id="planToggleBar">
+    <button id="planToggleBtn">👁 پلان کوچک</button>
+    <button id="planZoomIn">+</button>
+    <button id="planZoomOut">−</button>
+  </div>
+
+  <!-- انتخاب طبقه برای پلان -->
+  <div id="planFloorBar">
+    <span id="planFloorLabel">طبقه:</span>
+    <select id="planFloorSelect"></select>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { TransformControls } from 'three/addons/controls/TransformControls.js';
+    import { Sky } from 'three/addons/objects/Sky.js';
+    import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+    /* Renderer */
+    const renderer = new THREE.WebGLRenderer({
+      canvas:document.getElementById('canvas'),
+      antialias:true
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.setSize(window.innerWidth,window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.VSMShadowMap;
+
+    const scene = new THREE.Scene();
+
+    /* ----- بافت هاشور برای نمای پلان ----- */
+    const hatchCanvas = document.createElement('canvas');
+    hatchCanvas.width = hatchCanvas.height = 64;
+    const hctx = hatchCanvas.getContext('2d');
+    hctx.fillStyle = '#ffffff';
+    hctx.fillRect(0, 0, 64, 64);
+    hctx.strokeStyle = '#000000';
+    hctx.lineWidth = 2;
+    for (let i = -64; i < 64 * 2; i += 8) {
+      hctx.beginPath();
+      hctx.moveTo(i, 0);
+      hctx.lineTo(i - 64, 64);
+      hctx.stroke();
+    }
+    const hatchTex = new THREE.CanvasTexture(hatchCanvas);
+    hatchTex.wrapS = hatchTex.wrapT = THREE.RepeatWrapping;
+    hatchTex.repeat.set(2, 2);
+
+    /* Sky + Sun */
+    const sky = new Sky();
+    sky.scale.setScalar(10000);
+    scene.add(sky);
+    const sunVec = new THREE.Vector3();
+    let elevDeg = 80, azimDeg = 45;
+
+    const sunlight = new THREE.DirectionalLight(0xffffff, 1.1);
+    sunlight.castShadow = true;
+    sunlight.shadow.mapSize.set(4096, 4096);
+    sunlight.shadow.radius = 4;
+
+    const SHADOW_EXTENT = 80;
+    Object.assign(sunlight.shadow.camera, {
+      left:   -SHADOW_EXTENT,
+      right:   SHADOW_EXTENT,
+      top:     SHADOW_EXTENT,
+      bottom: -SHADOW_EXTENT,
+      near:  1,
+      far:  400
+    });
+    sunlight.shadow.bias       = -0.00005;
+    sunlight.shadow.normalBias =  0.0025;
+
+    scene.add(sunlight, sunlight.target);
+
+    function setSunAngles(elev, azim){
+      elevDeg = THREE.MathUtils.clamp(elev, 0, 90);
+      azimDeg = ((azim%360)+360)%360;
+      const phi = THREE.MathUtils.degToRad(90 - elevDeg);
+      const theta = THREE.MathUtils.degToRad(azimDeg);
+      sunVec.setFromSphericalCoords(1, phi, theta);
+      const u = sky.material.uniforms;
+      u.turbidity.value = 10;
+      u.rayleigh.value = 2;
+      u.mieCoefficient.value = 0.005;
+      u.mieDirectionalG.value = 0.8;
+      u.sunPosition.value.copy(sunVec);
+      sunlight.position.copy(sunVec).multiplyScalar(120);
+      sunlight.target.position.set(0,0,0);
+      sunlight.target.updateMatrixWorld(true);
+    }
+    setSunAngles(elevDeg, azimDeg);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.35);
+    scene.add(ambient);
+    sunlight.intensity = 0.9;
+
+    /* Camera + controls اصلی */
+    const camera = new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,.1,2000);
+    camera.position.set(10,10,10);
+    const orbit = new OrbitControls(camera,renderer.domElement);
+    orbit.enableDamping = true;
+    orbit.target.set(0,0,0);
+
+    /* دوربین پلان از بالا (Orthographic) + زوم */
+    const FRUSTUM_SIZE = 150;
+    let PLAN_REL_SIZE = 0.23;
+    let PLAN_MARGIN   = 12;
+
+    if (window.matchMedia('(max-width: 768px)').matches){
+      PLAN_REL_SIZE = 0.18;
+      PLAN_MARGIN   = 90;
+    }
+
+    let planZoom = 3;
+    const PLAN_ZOOM_MIN = 0.01;
+    const PLAN_ZOOM_MAX = 1000;
+
+    const planCamera = new THREE.OrthographicCamera(-1,1,1,-1,0.1,1000);
+    planCamera.position.set(0,150,0);
+    planCamera.up.set(0,0,-1);
+    planCamera.lookAt(0,0,0);
+
+   const planControls = new OrbitControls(planCamera, renderer.domElement);
+
+// حرکت نرم
+planControls.enableDamping = true;
+
+// اجازه حرکت روی پلان
+planControls.enablePan = true;
+
+// ❌ هیچ چرخشی نداشته باشه، فقط پان دو بعدی
+planControls.enableRotate = false;
+
+// زوم فقط با planZoom (دکمه‌ها و wheel ما)
+planControls.enableZoom = false;
+
+// همون محدوده‌ی قبلی، برای اطمینان
+planControls.minPolarAngle = 0;
+planControls.maxPolarAngle = Math.PI / 2;
+
+// بدون کنترل با کیبورد، فقط ماوس/تاچ
+planControls.enableKeys = false;
+
+planControls.target.set(0,0,0);
+planControls.enabled = false;
+
+
+
+    function updatePlanCameraFrustum(){
+      const aspect = window.innerWidth / window.innerHeight;
+      const size = FRUSTUM_SIZE / planZoom;
+      planCamera.left   = -size * aspect / 2;
+      planCamera.right  =  size * aspect / 2;
+      planCamera.top    =  size / 2;
+      planCamera.bottom = -size / 2;
+      planCamera.updateProjectionMatrix();
+    }
+    function applyPlanZoom(newZoom){
+      planZoom = THREE.MathUtils.clamp(newZoom, PLAN_ZOOM_MIN, PLAN_ZOOM_MAX);
+      updatePlanCameraFrustum();
+    }
+    updatePlanCameraFrustum();
+
+    /* Grid + ground */
+    const grid = new THREE.GridHelper(300, 250, 0x77ffd0, 0x283047);
+    grid.material.transparent=true;
+    grid.material.opacity=.35;
+    scene.add(grid);
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(300,300),
+      new THREE.MeshStandardMaterial({
+        color:0xd0e0f0,
+        roughness:1,
+        metalness:0
+      })
+    );
+    ground.rotation.x = -Math.PI/2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    /* Block dims + chamfer + نوع بلوک + گرید */
+    const OUT_L = 5.98,
+          OUT_W = 1.20,
+          OUT_H = 3.09,
+          WALL  = 0.225;
+
+    const GRID_SIZE     = 1.20;
+    const GRID_OFFSET_X = GRID_SIZE/2;
+    const GRID_OFFSET_Z = GRID_SIZE/2;
+
+    const GRID_Y_SIZE = OUT_H;
+    const GRID_Y_BASE = OUT_H / 2;
+
+    const CHAMFER = 0.02;
+    const CHAMFER_SEGMENTS = 2;
+
+    let BLOCK_TYPE = 'full';
+    let showPlanFull = false;
+    let currentPlanFloor = 0;
+
+    /* انتخاب نوع بلوک با آیکون‌ها */
+    const blockTypeIcons = document.querySelectorAll('.blockTypeIcon');
+    blockTypeIcons.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        BLOCK_TYPE = btn.dataset.type;
+        blockTypeIcons.forEach(b=>b.classList.toggle('active', b === btn));
+      });
+    });
+
+    /* سازنده‌ها */
+
+    function createHollowBlockFull(){
+      const g = new THREE.Group();
+      const m = new THREE.MeshStandardMaterial({
+        color: 0x27e1c1,
+        metalness: 0.1,
+        roughness: 0.4
+      });
+
+      const geoSide = new RoundedBoxGeometry(
+        WALL,
+        OUT_H,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const lw = new THREE.Mesh(geoSide, m);
+      lw.position.set(-(OUT_L/2 - WALL/2), 0, 0);
+      lw.userData.isBlockPart = true;
+      lw.userData.normalMaterial = lw.material;
+
+      const rw = lw.clone();
+      rw.position.x *= -1;
+      rw.userData.isBlockPart = true;
+      rw.userData.normalMaterial = rw.material;
+
+      const geoTopBottom = new RoundedBoxGeometry(
+        OUT_L,
+        WALL,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+
+      // سقف
+      const t = new THREE.Mesh(geoTopBottom, m);
+      t.position.y = (OUT_H/2 - WALL/2);
+      t.userData.hideInPlan  = true; // سقف در پلان مخفی
+      t.userData.isBlockPart = true;
+      t.userData.normalMaterial = t.material;
+
+      // کف
+      const b = new THREE.Mesh(geoTopBottom, m);
+      b.position.y = -(OUT_H/2 - WALL/2);
+      b.userData.hideInPlan  = false; // کف در پلان دیده شود
+      b.userData.isBlockPart = true;
+      b.userData.normalMaterial = b.material;
+
+      [lw, rw, t, b].forEach(w=>{
+        w.castShadow = true;
+        w.receiveShadow = true;
+        g.add(w);
+      });
+
+      return g;
+    }
+
+    function createHollowBlockNoBottom(){
+      const g = new THREE.Group();
+g.userData.kind = 'stair';
+g.userData.blockType = 'stair';
+      const m = new THREE.MeshStandardMaterial({
+        color: 0x27e1c1,
+        metalness: 0.1,
+        roughness: 0.4
+      });
+
+      const geoSide = new RoundedBoxGeometry(
+        WALL,
+        OUT_H,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const lw = new THREE.Mesh(geoSide, m);
+      lw.position.set(-(OUT_L/2 - WALL/2), 0, 0);
+      lw.userData.isBlockPart = true;
+      lw.userData.normalMaterial = lw.material;
+
+      const rw = lw.clone();
+      rw.position.x *= -1;
+      rw.userData.isBlockPart = true;
+      rw.userData.normalMaterial = rw.material;
+
+      const geoTop = new RoundedBoxGeometry(
+        OUT_L,
+        WALL,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const t = new THREE.Mesh(geoTop, m);
+      t.position.y = (OUT_H/2 - WALL/2);
+      t.userData.hideInPlan  = true;
+      t.userData.isBlockPart = true;
+      t.userData.normalMaterial = t.material;
+
+      [lw, rw, t].forEach(w=>{
+        w.castShadow = true;
+        w.receiveShadow = true;
+        g.add(w);
+      });
+
+      return g;
+    }
+
+    // نوع جدید: بدون سقف (دیوارها + کف)
+    function createHollowBlockNoTop(){
+      const g = new THREE.Group();
+      const m = new THREE.MeshStandardMaterial({
+        color: 0x27e1c1,
+        metalness: 0.1,
+        roughness: 0.4
+      });
+
+      const geoSide = new RoundedBoxGeometry(
+        WALL,
+        OUT_H,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const lw = new THREE.Mesh(geoSide, m);
+      lw.position.set(-(OUT_L/2 - WALL/2), 0, 0);
+      lw.userData.isBlockPart = true;
+      lw.userData.normalMaterial = lw.material;
+
+      const rw = lw.clone();
+      rw.position.x *= -1;
+      rw.userData.isBlockPart = true;
+      rw.userData.normalMaterial = rw.material;
+
+      const geoBottom = new RoundedBoxGeometry(
+        OUT_L,
+        WALL,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const b = new THREE.Mesh(geoBottom, m);
+      b.position.y = -(OUT_H/2 - WALL/2);
+      b.userData.hideInPlan  = false; // کف در پلان دیده شود
+      b.userData.isBlockPart = true;
+      b.userData.normalMaterial = b.material;
+
+      [lw, rw, b].forEach(w=>{
+        w.castShadow = true;
+        w.receiveShadow = true;
+        g.add(w);
+      });
+
+      return g;
+    }
+    // 1) مثل معمولی ولی صفحه‌ی سمت راست حذف شده و به جایش دو ستون گوشه‌ی راست داریم
+    function createHollowBlockNoRightWall(){
+      const g = new THREE.Group();
+      const m = new THREE.MeshStandardMaterial({
+        color: 0x27e1c1,
+        metalness: 0.1,
+        roughness: 0.4
+      });
+
+      // دیوار سمت چپ مثل معمولی
+      const geoSide = new RoundedBoxGeometry(
+        WALL,
+        OUT_H,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const lw = new THREE.Mesh(geoSide, m);
+      lw.position.set(-(OUT_L/2 - WALL/2), 0, 0);
+
+      // ستون‌های گوشه راست (دو تا ستون عمودی جلو و عقب)
+      const colGeo = new RoundedBoxGeometry(
+        WALL,
+        OUT_H,
+        WALL,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const rc1 = new THREE.Mesh(colGeo, m);
+      rc1.position.set( OUT_L/2 - WALL/2, 0,  OUT_W/2 - WALL/2);
+
+      const rc2 = rc1.clone();
+      rc2.position.z *= -1;
+
+      // سقف و کف کامل مثل معمولی
+      const geoTopBottom = new RoundedBoxGeometry(
+        OUT_L,
+        WALL,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+
+      const t = new THREE.Mesh(geoTopBottom, m);
+      t.position.y = (OUT_H/2 - WALL/2);
+      t.userData.hideInPlan  = true;   // سقف در پلان مخفی
+      const b = new THREE.Mesh(geoTopBottom, m);
+      b.position.y = -(OUT_H/2 - WALL/2);
+      b.userData.hideInPlan  = false;  // کف در پلان دیده شود
+
+      [lw, rc1, rc2, t, b].forEach(w=>{
+        w.castShadow = true;
+        w.receiveShadow = true;
+        w.userData.isBlockPart = true;
+        w.userData.normalMaterial = w.material;
+        if (w.userData.hideInPlan === undefined) {
+          w.userData.hideInPlan = false;
+        }
+        g.add(w);
+      });
+
+      return g;
+    }
+
+    // 2) مثل قبلی ولی اصلاً صفحه‌ی چپ و راست نداریم؛ فقط ستون‌ها در چهار گوشه
+    function createHollowBlockSideColumns(){
+      const g = new THREE.Group();
+      const m = new THREE.MeshStandardMaterial({
+        color: 0x27e1c1,
+        metalness: 0.1,
+        roughness: 0.4
+      });
+
+      // چهار ستون گوشه‌ها
+      const colGeo = new RoundedBoxGeometry(
+        WALL,
+        OUT_H,
+        WALL,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+
+      const c1 = new THREE.Mesh(colGeo, m);
+      c1.position.set( OUT_L/2 - WALL/2, 0,  OUT_W/2 - WALL/2);
+
+      const c2 = c1.clone();
+      c2.position.z *= -1;
+
+      const c3 = c1.clone();
+      c3.position.x *= -1;
+
+      const c4 = c3.clone();
+      c4.position.z *= -1;
+
+      // سقف و کف کامل
+      const geoTopBottom = new RoundedBoxGeometry(
+        OUT_L,
+        WALL,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+
+      const t = new THREE.Mesh(geoTopBottom, m);
+      t.position.y = (OUT_H/2 - WALL/2);
+      t.userData.hideInPlan  = true;
+
+      const b = new THREE.Mesh(geoTopBottom, m);
+      b.position.y = -(OUT_H/2 - WALL/2);
+      b.userData.hideInPlan  = false;
+
+      [c1, c2, c3, c4, t, b].forEach(w=>{
+        w.castShadow = true;
+        w.receiveShadow = true;
+        w.userData.isBlockPart = true;
+        w.userData.normalMaterial = w.material;
+        if (w.userData.hideInPlan === undefined) {
+          w.userData.hideInPlan = false;
+        }
+        g.add(w);
+      });
+
+      return g;
+    }
+
+    // 3) مثل معمولی ولی کف صفحه ندارد، فقط فریم کف (چهار تیر در لبه‌های کف)
+    function createHollowBlockNoBottomFrame(){
+      const g = new THREE.Group();
+      const m = new THREE.MeshStandardMaterial({
+        color: 0x27e1c1,
+        metalness: 0.1,
+        roughness: 0.4
+      });
+
+      // دیوارهای چپ و راست مثل معمولی
+      const geoSide = new RoundedBoxGeometry(
+        WALL,
+        OUT_H,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const lw = new THREE.Mesh(geoSide, m);
+      lw.position.set(-(OUT_L/2 - WALL/2), 0, 0);
+
+      const rw = lw.clone();
+      rw.position.x *= -1;
+
+      // سقف کامل مثل معمولی
+      const geoTop = new RoundedBoxGeometry(
+        OUT_L,
+        WALL,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const t = new THREE.Mesh(geoTop, m);
+      t.position.y = (OUT_H/2 - WALL/2);
+      t.userData.hideInPlan  = true;
+
+      // فریم کف: چهار تیر در لبه‌های مستطیل پایین
+      const bottomY = -(OUT_H/2 - WALL/2);
+
+      const geoBeamL = new RoundedBoxGeometry(
+        OUT_L,
+        WALL,
+        WALL,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const geoBeamW = new RoundedBoxGeometry(
+        WALL,
+        WALL,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+
+      // تیرهای جلو/عقب
+      const bf = new THREE.Mesh(geoBeamL, m);
+      bf.position.set(0, bottomY,  OUT_W/2 - WALL/2);
+
+      const bb = bf.clone();
+      bb.position.z *= -1;
+
+      // تیرهای چپ/راست
+      const bl = new THREE.Mesh(geoBeamW, m);
+      bl.position.set(-(OUT_L/2 - WALL/2), bottomY, 0);
+
+      const br = bl.clone();
+      br.position.x *= -1;
+
+      [lw, rw, t, bf, bb, bl, br].forEach(w=>{
+        w.castShadow = true;
+        w.receiveShadow = true;
+        w.userData.isBlockPart = true;
+        w.userData.normalMaterial = w.material;
+
+        // در پلان: سقف مخفی، فریم کف دیده شود
+        if (w === t){
+          w.userData.hideInPlan = true;
+        }else{
+          w.userData.hideInPlan = false;
+        }
+
+        g.add(w);
+      });
+
+      return g;
+    }
+
+    // 4) برعکس بالا: سقف صفحه ندارد، فقط فریم سقف؛ کف کامل است
+    function createHollowBlockNoTopFrame(){
+      const g = new THREE.Group();
+      const m = new THREE.MeshStandardMaterial({
+        color: 0x27e1c1,
+        metalness: 0.1,
+        roughness: 0.4
+      });
+
+      // دیوارهای چپ و راست مثل معمولی
+      const geoSide = new RoundedBoxGeometry(
+        WALL,
+        OUT_H,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const lw = new THREE.Mesh(geoSide, m);
+      lw.position.set(-(OUT_L/2 - WALL/2), 0, 0);
+
+      const rw = lw.clone();
+      rw.position.x *= -1;
+
+      // کف کامل مثل معمولی
+      const geoBottom = new RoundedBoxGeometry(
+        OUT_L,
+        WALL,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const b = new THREE.Mesh(geoBottom, m);
+      b.position.y = -(OUT_H/2 - WALL/2);
+      b.userData.hideInPlan  = false;
+
+      // فریم سقف
+      const topY = (OUT_H/2 - WALL/2);
+
+      const geoBeamL = new RoundedBoxGeometry(
+        OUT_L,
+        WALL,
+        WALL,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+      const geoBeamW = new RoundedBoxGeometry(
+        WALL,
+        WALL,
+        OUT_W,
+        CHAMFER_SEGMENTS,
+        CHAMFER
+      );
+
+      const tf = new THREE.Mesh(geoBeamL, m);
+      tf.position.set(0, topY,  OUT_W/2 - WALL/2);
+
+      const tb = tf.clone();
+      tb.position.z *= -1;
+
+      const tl = new THREE.Mesh(geoBeamW, m);
+      tl.position.set(-(OUT_L/2 - WALL/2), topY, 0);
+
+      const tr = tl.clone();
+      tr.position.x *= -1;
+
+      [lw, rw, b, tf, tb, tl, tr].forEach(w=>{
+        w.castShadow = true;
+        w.receiveShadow = true;
+        w.userData.isBlockPart = true;
+        w.userData.normalMaterial = w.material;
+
+        // فریم سقف در پلان مخفی، کف دیده شود
+        if (w === b){
+          w.userData.hideInPlan = false;
+        }else{
+          w.userData.hideInPlan = true;
+        }
+
+        g.add(w);
+      });
+
+      return g;
+    }
+
+function createStairModule(){
+  const g = new THREE.Group();
+  const m = new THREE.MeshStandardMaterial({
+    color: 0x27e1c1,
+    metalness: 0.1,
+    roughness: 0.4
+  });
+
+  const run = 3 * GRID_SIZE;   // طول پله = 3 گرید = 3.6 متر
+
+  const width = OUT_W;     // عرض پله = عرض بلوک
+  const height = OUT_H;    // ارتفاع = از کف تا سقف
+  const stepsCount = 10;
+
+  const stepHeight = height / stepsCount;
+  const stepDepth  = run   / stepsCount;
+
+  // پله‌ها (به سمت +X بالا می‌روند)
+  for (let i = 0; i < stepsCount; i++){
+    const stepGeo = new THREE.BoxGeometry(stepDepth, stepHeight, width);
+    const step = new THREE.Mesh(stepGeo, m);
+
+    const yCenter = -height/2 + (i + 0.5) * stepHeight;
+    const xCenter = -run/2    + (i + 0.5) * stepDepth;
+
+    step.position.set(xCenter, yCenter, 0);
+
+    step.castShadow = true;
+    step.receiveShadow = true;
+    step.userData.isBlockPart = true;
+    step.userData.normalMaterial = m;
+    step.userData.hideInPlan = false;  // در پلان دیده بشود
+
+    g.add(step);
+  }
+
+  
+
+  return g;
+}
+
+
+
+        function createHollowBlock(){
+  if (BLOCK_TYPE === 'stair') return createStairModule();
+  if (BLOCK_TYPE === 'noBottom') return createHollowBlockNoBottom();
+  if (BLOCK_TYPE === 'noTop')    return createHollowBlockNoTop();
+  if (BLOCK_TYPE === 'noRightWall') return createHollowBlockNoRightWall();
+  if (BLOCK_TYPE === 'sideColumns') return createHollowBlockSideColumns();
+  if (BLOCK_TYPE === 'floorFrame') return createHollowBlockNoBottomFrame();
+  if (BLOCK_TYPE === 'ceilingFrame') return createHollowBlockNoTopFrame();
+  return createHollowBlockFull();
+}
+
+
+
+    /* State */
+    const blocks=[];
+    const blockMap=new Map();
+    let blockCounter=0, nextId=1;
+    const EPS=1e-6, ALLOW_OVERLAP=0.02;
+
+    const planFloorSelect = document.getElementById('planFloorSelect');
+
+    /* Helpers */
+    const getWorldBox=o=>new THREE.Box3().setFromObject(o);
+
+    function getBlockFloorIndexFromY(y){
+      return Math.round((y - GRID_Y_BASE) / GRID_Y_SIZE);
+    }
+    function getBlockFloorIndex(block){
+      return getBlockFloorIndexFromY(block.position.y);
+    }
+
+function isStairObject(obj){
+  if (!obj || !obj.userData) return false;
+  return obj.userData.kind === 'stair' || obj.userData.blockType === 'stair';
+}
+
+
+    function resolveCollisions(o, ignoreSet=null){
+      const maxIter = 6;
+      let moved = false;
+
+      for(let iter = 0; iter < maxIter; iter++){
+        let fixedAny = false;
+
+        const a = getWorldBox(o);
+        const aCenter = a.getCenter(new THREE.Vector3());
+
+        for(const other of blocks){
+          if(other === o) continue;
+          if(ignoreSet && ignoreSet.has(other)) continue;
+
+                // 🔥 اگر یکی از طرفین پله باشد، برخورد را نادیده بگیر
+  if (isStairObject(o) || isStairObject(other)) continue;
+
+          const b = getWorldBox(other);
+          if(!a.intersectsBox(b)) continue;
+
+          const overlapX = Math.min(a.max.x - b.min.x, b.max.x - a.min.x);
+          const overlapY = Math.min(a.max.y - b.min.y, b.max.y - a.min.y);
+          const overlapZ = Math.min(a.max.z - b.min.z, b.max.z - a.min.z);
+          const minOverlap = Math.min(overlapX, overlapY, overlapZ);
+
+          if(minOverlap <= ALLOW_OVERLAP + EPS) continue;
+
+          let axis = 'x';
+          if(minOverlap === overlapY) axis = 'y';
+          else if(minOverlap === overlapZ) axis = 'z';
+
+          const bCenter = b.getCenter(new THREE.Vector3());
+          const delta = new THREE.Vector3();
+          const extra = minOverlap - ALLOW_OVERLAP;
+
+          if(axis === 'x'){
+            const dir = (aCenter.x >= bCenter.x) ? 1 : -1;
+            delta.x = dir * extra;
+          }else if(axis === 'y'){
+            const dir = (aCenter.y >= bCenter.y) ? 1 : -1;
+            delta.y = dir * extra;
+          }else{
+            const dir = (aCenter.z >= bCenter.z) ? 1 : -1;
+            delta.z = dir * extra;
+          }
+
+          o.position.add(delta);
+          fixedAny = true;
+          moved = true;
+        }
+
+        if(!fixedAny) break;
+      }
+
+      clampGround(o);
+      return moved;
+    }
+
+    function clampGround(o){
+      const box=getWorldBox(o);
+      if(box.min.y<0){
+        o.position.y+=(-box.min.y+EPS);
+      }
+      if(o.position.y<OUT_H/2){
+        o.position.y=OUT_H/2;
+      }
+    }
+
+    function savePrevTransform(o){
+      o.userData.prevPos=o.position.clone();
+      o.userData.prevQuat=o.quaternion.clone();
+    }
+
+    const SNAP_TOL=0.15;
+    const overlaps1D=(a1,a2,b1,b2)=>a1<=b2 && a2>=b1;
+
+    function snapToNeighbors(o){
+      if(!o) return false;
+      const a=getWorldBox(o);
+      const best={axis:null,dist:Infinity,delta:0};
+
+      for(const other of blocks){
+        if(other===o) continue;
+        const b=getWorldBox(other);
+
+        if(overlaps1D(a.min.y,a.max.y,b.min.y,b.max.y) &&
+           overlaps1D(a.min.z,a.max.z,b.min.z,b.max.z)){
+          const d1=Math.abs(a.min.x-b.max.x);
+          if(d1<SNAP_TOL&&d1<best.dist){
+            best.axis='x'; best.dist=d1; best.delta=b.max.x-a.min.x;
+          }
+          const d2=Math.abs(a.max.x-b.min.x);
+          if(d2<SNAP_TOL&&d2<best.dist){
+            best.axis='x'; best.dist=d2; best.delta=b.min.x-a.max.x;
+          }
+        }
+
+        if(overlaps1D(a.min.y,a.max.y,b.min.y,b.max.y) &&
+           overlaps1D(a.min.x,a.max.x,b.min.x,b.max.x)){
+          const d3=Math.abs(a.min.z-b.max.z);
+          if(d3<SNAP_TOL&&d3<best.dist){
+            best.axis='z'; best.dist=d3; best.delta=b.max.z-a.min.z;
+          }
+          const d4=Math.abs(a.max.z-b.min.z);
+          if(d4<SNAP_TOL&&d4<best.dist){
+            best.axis='z'; best.dist=d4; best.delta=b.min.z-a.max.z;
+          }
+        }
+
+        if(overlaps1D(a.min.x,a.max.x,b.min.x,b.max.x) &&
+           overlaps1D(a.min.z,a.max.z,b.min.z,b.max.z)){
+          const d5=Math.abs(a.min.y-b.max.y);
+          if(d5<SNAP_TOL&&d5<best.dist){
+            best.axis='y'; best.dist=d5; best.delta=b.max.y-a.min.y;
+          }
+          const d6=Math.abs(a.max.y-b.min.y);
+          if(d6<SNAP_TOL&&d6<best.dist){
+            best.axis='y'; best.dist=d6; best.delta=b.min.y-a.max.y;
+          }
+        }
+      }
+
+      if(best.axis){
+        if(best.axis==='x') o.position.x += best.delta;
+        if(best.axis==='y') o.position.y = Math.max(o.position.y + best.delta, OUT_H/2 + EPS);
+        if(best.axis==='z') o.position.z += best.delta;
+
+        resolveCollisions(o);
+        clampGround(o);
+        savePrevTransform(o);
+        return true;
+      }
+      return false;
+    }
+
+    /* اسنپ روی گرید */
+    function snapToGrid(o){
+      if (!o) return;
+
+      o.position.x =
+        GRID_OFFSET_X +
+        Math.round((o.position.x - GRID_OFFSET_X) / GRID_SIZE) * GRID_SIZE;
+
+      o.position.z =
+        GRID_OFFSET_Z +
+        Math.round((o.position.z - GRID_OFFSET_Z) / GRID_SIZE) * GRID_SIZE;
+
+      o.position.y =
+        GRID_Y_BASE +
+        Math.round((o.position.y - GRID_Y_BASE) / GRID_Y_SIZE) * GRID_Y_SIZE;
+    }
+
+    /* انتخاب + وایرفریم انتخاب */
+    let selected=null;
+    const selectedBlocks = new Set();
+    const multiPivot = new THREE.Object3D();
+    scene.add(multiPivot);
+
+    function addWireframe(target){
+      target.traverse(c=>{
+        if(c.isMesh && !c.getObjectByName('__wf__')){
+          const egeo=new THREE.EdgesGeometry(c.geometry,1);
+          const line=new THREE.LineSegments(
+            egeo,
+            new THREE.LineBasicMaterial({
+              color:0xffcc00,
+              transparent:true,
+              opacity:1
+            })
+          );
+          line.name='__wf__';
+          c.add(line);
+        }
+      });
+    }
+    function removeWireframe(target){
+      if(!target) return;
+      target.traverse(c=>{
+        const wf=c.getObjectByName('__wf__');
+        if(wf){
+          c.remove(wf);
+          wf.geometry.dispose();
+          wf.material.dispose();
+        }
+      });
+    }
+
+    const coordsBar=document.getElementById('coordsBar');
+    function fmt(n){ return n.toFixed(2); }
+    function updateCoords(o){
+      if(!o){
+        coordsBar.style.display='none';
+        return;
+      }
+      const p=o.position;
+      coordsBar.textContent=`X: ${fmt(p.x)} | Y: ${fmt(p.y)} | Z: ${fmt(p.z)}`;
+      coordsBar.style.display='block';
+    }
+
+    // انتخاب/عدم انتخاب بلوک + چند‌انتخابی
+    function selectObject(obj, additive = false){
+      if (showPlanFull) return; // در پلان تمام‌صفحه، انتخاب نداریم
+
+      // اگر additive=false، اول همه‌چی رو خالی کن
+      if (!additive){
+        selectedBlocks.forEach(b => removeWireframe(b));
+        selectedBlocks.clear();
+      }
+
+      // اگر با Ctrl روی یک بلوکِ قبلاً انتخاب‌شده کلیک کنیم → از انتخاب خارجش کن
+      if (obj && additive && selectedBlocks.has(obj)){
+        removeWireframe(obj);
+        selectedBlocks.delete(obj);
+
+        if (selectedBlocks.size === 0){
+          selected = null;
+          tctrl.detach();
+          updateCoords(null);
+        } else {
+          selected = Array.from(selectedBlocks)[0];
+          // اگر چندتا موندن، حول pivot جابجا می‌کنیم
+          if (selectedBlocks.size > 1){
+            const center = new THREE.Vector3();
+            selectedBlocks.forEach(b => center.add(b.position));
+            center.multiplyScalar(1 / selectedBlocks.size);
+            multiPivot.position.copy(center);
+            tctrl.attach(multiPivot);
+            updateCoords(multiPivot);
+          } else {
+            tctrl.attach(selected);
+            updateCoords(selected);
+          }
+        }
+      }
+      else if (obj){
+        // انتخاب جدید
+        selected = obj;
+        selectedBlocks.add(obj);
+        addWireframe(obj);
+
+        if (selectedBlocks.size > 1){
+          const center = new THREE.Vector3();
+          selectedBlocks.forEach(b => center.add(b.position));
+          center.multiplyScalar(1 / selectedBlocks.size);
+          multiPivot.position.copy(center);
+          tctrl.attach(multiPivot);
+          updateCoords(multiPivot);
+        } else {
+          tctrl.attach(obj);
+          updateCoords(obj);
+        }
+      }
+      else{
+        // کلیک روی فضای خالی بدون Ctrl → خالی کردن انتخاب
+        selected = null;
+        selectedBlocks.forEach(b => removeWireframe(b));
+        selectedBlocks.clear();
+        tctrl.detach();
+        updateCoords(null);
+      }
+
+      // سینک UI (لیست، نام، رنگ)
+      if (selected){
+        renameInput.value = selected.name;
+
+        const opt = [...blockList.options].find(o => +o.dataset.id === selected.userData.id);
+        if (opt) blockList.value = opt.value;
+
+        const hex = getBlockHexColor(selected);
+        colorInput.value = hex;
+        hexInput.value   = hex;
+      } else {
+        renameInput.value = '';
+      }
+    }
+
+    /* Transform controls */
+    const tctrl=new TransformControls(camera,renderer.domElement);
+    tctrl.setMode('translate');
+    tctrl.setSpace('world');
+    tctrl.setTranslationSnap(null);
+    tctrl.setRotationSnap(THREE.MathUtils.degToRad(90));
+    scene.add(tctrl);
+
+    const btnMove=document.getElementById('modeMove');
+    const btnRotate=document.getElementById('modeRotate');
+    const updateUI=()=>{
+      const isMove=tctrl.mode==='translate';
+      btnMove.style.borderColor=isMove?'#5eead4':'#2b2f4a';
+      btnRotate.style.borderColor=!isMove?'#5eead4':'#2b2f4a';
+    };
+    btnMove.onclick=()=>{tctrl.setMode('translate');updateUI();};
+    btnRotate.onclick=()=>{
+      tctrl.setMode('rotate');
+      tctrl.setRotationSnap(THREE.MathUtils.degToRad(90));
+      updateUI();
+    };
+    updateUI();
+    tctrl.addEventListener('dragging-changed',e=>{
+      if (!e.value) {
+        orbit.enabled = true;
+      } else {
+        orbit.enabled = false;
+      }
+    });
+
+    /* انیمیشن دوربین برای نماها */
+    let camTween=null;
+    const easeInOutQuad=t=>t<.5?2*t*t:-1+(4-2*t)*t;
+
+    tctrl.addEventListener('change', ()=>{
+      if (!tctrl.dragging) return;
+      if (showPlanFull) return;
+
+      const o = tctrl.object;
+      if (!o) return;
+
+      const ignoreSet = (selectedBlocks.size > 1 ? selectedBlocks : null);
+
+      if (tctrl.mode === 'translate') {
+
+        if (!o.userData.lastPosDuringDrag) {
+          o.userData.lastPosDuringDrag = o.position.clone();
+          snapToGrid(o);
+          o.userData.lastPosDuringDrag.copy(o.position);
+        }
+
+        snapToGrid(o);
+
+        const delta = new THREE.Vector3().subVectors(
+          o.position,
+          o.userData.lastPosDuringDrag
+        );
+        o.userData.lastPosDuringDrag.copy(o.position);
+
+        if (o === multiPivot) {
+          if (delta.lengthSq() > 0 && selectedBlocks.size) {
+            selectedBlocks.forEach(b=>{
+              b.position.add(delta);
+              resolveCollisions(b, ignoreSet);
+              clampGround(b);
+              snapToGrid(b);
+            });
+          }
+        } else {
+          resolveCollisions(o, ignoreSet);
+          clampGround(o);
+          snapToGrid(o);
+
+          if (delta.lengthSq() > 0 && selectedBlocks.size > 1) {
+            selectedBlocks.forEach(b=>{
+              if (b === o) return;
+              b.position.add(delta);
+              resolveCollisions(b, ignoreSet);
+              clampGround(b);
+              snapToGrid(b);
+            });
+          }
+        }
+
+        updateCoords(o === multiPivot ? multiPivot : o);
+      } else {
+        resolveCollisions(o, ignoreSet);
+        clampGround(o);
+        updateCoords(o === multiPivot ? multiPivot : o);
+      }
+    });
+
+    tctrl.addEventListener('mouseUp', ()=>{
+      if (showPlanFull) return;
+      const o = tctrl.object;
+      if(!o) return;
+
+      o.userData.lastPosDuringDrag = null;
+      const ignoreSet = (selectedBlocks.size > 1 ? selectedBlocks : null);
+
+      if(o === multiPivot){
+        selectedBlocks.forEach(b=>{
+          snapToNeighbors(b);
+          resolveCollisions(b, ignoreSet);
+          clampGround(b);
+          snapToGrid(b);
+          savePrevTransform(b);
+        });
+        updateCoords(multiPivot);
+      }else{
+        snapToNeighbors(o);
+        resolveCollisions(o, ignoreSet);
+        clampGround(o);
+        snapToGrid(o);
+
+        if(selectedBlocks.size > 1){
+          selectedBlocks.forEach(b=>{
+            if(b === o) return;
+            snapToNeighbors(b);
+            resolveCollisions(b, ignoreSet);
+            clampGround(b);
+            snapToGrid(b);
+            savePrevTransform(b);
+          });
+        }
+
+        updateCoords(o);
+        savePrevTransform(o);
+      }
+
+      refreshPlanFloors();
+    });
+
+    /* تاریخچه */
+    const undoBtn=document.getElementById('undoBtn');
+    const redoBtn=document.getElementById('redoBtn');
+    const history=[];
+    const future=[];
+    const pushAction=a=>{
+      history.push(a);
+      future.length=0;
+      updateHistoryButtons();
+    };
+    const updateHistoryButtons=()=>{
+      undoBtn.disabled=history.length===0;
+      redoBtn.disabled=future.length===0;
+    };
+    const blockList=document.getElementById('blockList');
+    const renameInput=document.getElementById('renameInput');
+    const renameBtn=document.getElementById('renameBtn');
+
+    const serializeBlock = b => ({
+  id: b.userData.id,
+  name: b.name,
+  kind: b.userData.kind || 'block',           // 👈 بلوک یا پله
+  blockType: b.userData.blockType || 'full',  // 👈 نوع بلوک
+  pos: b.position.clone(),
+  quat: b.quaternion.clone(),
+  colorHex: getBlockHexColor(b)
+});
+
+
+    function performAddFromState(state, selectAfter = true){
+  let b;
+
+  if (state.kind === 'stair'){
+    // 🔹 بازسازی پله
+    b = createStairModule();
+  } else {
+    // 🔹 بازسازی بلوک با نوع درست
+    const prevType = BLOCK_TYPE;
+    BLOCK_TYPE = state.blockType || 'full';
+    b = createHollowBlock();
+    BLOCK_TYPE = prevType;
+  }
+
+  b.name = state.name;
+  b.userData.id = state.id;
+  b.userData.kind = state.kind || 'block';
+  b.userData.blockType = state.blockType || 'full';
+
+  b.position.copy(state.pos);
+  b.quaternion.copy(state.quat);
+  setBlockColor(b, state.colorHex || '#27e1c1');
+
+  scene.add(b);
+  blocks.push(b);
+  blockMap.set(b.userData.id, b);
+  addBlockToList(b);
+  if (selectAfter) selectObject(b);
+  return b;
+}
+
+    const cmdAddBlock=st=>performAddFromState(st,true);
+
+    function cmdDeleteBlock(id){
+      const b=findBlockById(id);
+      if(!b) return;
+      removeWireframe(b);
+      scene.remove(b);
+      const i=blocks.indexOf(b);
+      if(i!==-1) blocks.splice(i,1);
+      blockMap.delete(id);
+      removeBlockFromList(b);
+      if(selected===b) selectObject(null);
+      refreshPlanFloors();
+    }
+    function cmdRename(id,newName){
+      const b=findBlockById(id);
+      if(!b) return;
+      b.name=newName;
+      updateBlockNameInList(id,newName);
+      if(selected===b){
+        renameInput.value=newName;
+        blockList.value=newName;
+      }
+    }
+    function cmdTransform(id,pose){
+      const b=findBlockById(id);
+      if(!b) return;
+      b.position.copy(pose.pos);
+      b.quaternion.copy(pose.quat);
+      clampGround(b);
+      updateCoords(b);
+    }
+    function cmdRecolor(id,colorHex){
+      const b=findBlockById(id);
+      if(!b) return;
+      setBlockColor(b,colorHex);
+      if(selected===b){
+        colorInput.value=colorHex;
+        hexInput.value=colorHex;
+      }
+    }
+
+    function undo(){
+      const a=history.pop();
+      if(!a) return;
+      future.push(a);
+      updateHistoryButtons();
+      switch(a.type){
+        case'add':
+          cmdDeleteBlock(a.state.id);
+          break;
+        case'delete':
+          cmdAddBlock(a.state);
+          break;
+        case'rename':
+          cmdRename(a.id,a.prevName);
+          break;
+        case'transform':
+          cmdTransform(a.id,a.prev);
+          if(selected&&selected.userData.id===a.id)
+            selectObject(findBlockById(a.id));
+          break;
+        case'recolor':
+          cmdRecolor(a.id,a.prevHex);
+          break;
+      }
+      refreshPlanFloors();
+    }
+    function redo(){
+      const a=future.pop();
+      if(!a) return;
+      history.push(a);
+      updateHistoryButtons();
+      switch(a.type){
+        case'add':
+          cmdAddBlock(a.state);
+          break;
+        case'delete':
+          cmdDeleteBlock(a.state.id);
+          break;
+        case'rename':
+          cmdRename(a.id,a.nextName);
+          break;
+        case'transform':
+          cmdTransform(a.id,a.next);
+          if(selected&&selected.userData.id===a.id)
+            selectObject(findBlockById(a.id));
+          break;
+        case'recolor':
+          cmdRecolor(a.id,a.nextHex);
+          break;
+      }
+      refreshPlanFloors();
+    }
+    undoBtn.onclick=undo;
+    redoBtn.onclick=redo;
+    window.addEventListener('keydown', e => {
+  // اگر فوکوس روی اینپوت/تکست‌اریاست، کاری نکنیم که توی تایپ مزاحم نشیم
+  const ae = document.activeElement;
+  if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) {
+    return;
+  }
+
+  // Undo
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    undo();
+    return;
+  }
+
+  // Redo
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+    e.preventDefault();
+    redo();
+    return;
+  }
+
+  // 🔥 حذف با کلید Delete
+  if (e.key === 'Delete') {
+    e.preventDefault();
+    deleteSelectedBlocks();
+    return;
+  }
+});
+
+
+    /* لیست نام‌ها */
+    function addBlockToList(block){
+      const opt=document.createElement('option');
+      opt.value=block.name;
+      opt.textContent=block.name;
+      opt.dataset.id=block.userData.id;
+      blockList.appendChild(opt);
+    }
+    function removeBlockFromList(block){
+      [...blockList.options].forEach(o=>{
+        if(+o.dataset.id===block.userData.id) o.remove();
+      });
+    }
+    function updateBlockNameInList(id,newName){
+      [...blockList.options].forEach(o=>{
+        if(+o.dataset.id===id){
+          o.value=newName;
+          o.textContent=newName;
+        }
+      });
+    }
+    const findBlockById=id=>blockMap.get(id)||null;
+
+    blockList.addEventListener('change',()=>{
+      const opt=blockList.selectedOptions[0];
+      if(!opt){
+        selectObject(null);
+        return;
+      }
+      const b=findBlockById(+opt.dataset.id);
+      selectObject(b||null,false);
+    });
+
+    /* افزودن/حذف/تغییر نام */
+    document.getElementById('addBlockBtn').onclick=()=>{
+  const b=createHollowBlock();
+  b.userData.id = nextId++;
+  b.userData.kind = 'block';          // 👈 نوع: بلوک
+  b.userData.blockType = BLOCK_TYPE;  // 👈 نوع بلوک (full, noTop, ...)
+
+  b.name = `بلوک ${++blockCounter}`;
+
+  if(blocks.length===0){
+    b.position.set(2.99, 1.54, 0.60);
+  }else{
+    const last=blocks[blocks.length-1];
+    const lb=getWorldBox(last);
+    b.position.set(lb.max.x+(OUT_L/2), last.position.y, last.position.z);
+  }
+  setBlockColor(b, colorInput.value||'#27e1c1');
+  scene.add(b);
+  blocks.push(b);
+  blockMap.set(b.userData.id,b);
+  clampGround(b);
+  snapToGrid(b);
+  savePrevTransform(b);
+  addBlockToList(b);
+  selectObject(b);
+  pushAction({type:'add', state:serializeBlock(b)});
+  updateHistoryButtons();
+  refreshPlanFloors();
+};
+
+const addStairBtn = document.getElementById('addStairBtn');
+
+if (addStairBtn){
+  addStairBtn.onclick = () => {
+    const s = createStairModule();
+
+    s.userData.id   = nextId++;
+    s.userData.kind = 'stair';
+    s.userData.blockType = 'stair'; // برای ذخیره Undo/Redo
+
+    s.name = `پله ${++blockCounter}`;
+
+    if (blocks.length === 0){
+      s.position.set(2.99, OUT_H/2, 0.60);
+    } else {
+      const last = blocks[blocks.length - 1];
+      const lb   = getWorldBox(last);
+      s.position.set(lb.max.x + (OUT_L/4), OUT_H/2, last.position.z);
+    }
+
+    setBlockColor(s, colorInput.value || '#27e1c1');
+
+    scene.add(s);
+    blocks.push(s);
+    blockMap.set(s.userData.id, s);
+
+    clampGround(s);
+    snapToGrid(s);
+    savePrevTransform(s);
+    addBlockToList(s);
+    selectObject(s);
+
+    pushAction({ type:'add', state: serializeBlock(s) });
+    updateHistoryButtons();
+    refreshPlanFloors();
+  };
+}
+
+    // تابع مشترک برای حذف یک یا چند بلوک انتخاب‌شده
+function deleteSelectedBlocks(){
+  // اگر هیچ‌چی انتخاب نیست
+  if (!selected && (!selectedBlocks || selectedBlocks.size === 0)){
+    alert('ابتدا یک بلوک را انتخاب کنید.');
+    return;
+  }
+
+  // لیست آبجکت‌هایی که باید حذف شوند
+  const targets = (selectedBlocks && selectedBlocks.size > 0)
+    ? Array.from(selectedBlocks)
+    : (selected ? [selected] : []);
+
+  // برای هرکدام یک اکشن delete در history ثبت کن
+  targets.forEach(b=>{
+    const st = serializeBlock(b);
+    cmdDeleteBlock(b.userData.id);
+    pushAction({ type:'delete', state: st });
+  });
+
+  // پاک کردن انتخاب‌ها
+  selected = null;
+  if (selectedBlocks){
+    selectedBlocks.forEach(b=>removeWireframe(b));
+    selectedBlocks.clear();
+  }
+  tctrl.detach();
+  updateCoords(null);
+
+  refreshPlanFloors();
+  updateHistoryButtons();
+}
+
+// دکمه حذف از همین تابع استفاده کند
+document.getElementById('deleteBlockBtn').onclick = deleteSelectedBlocks;
+
+
+    renameBtn.onclick=()=>{
+      if(!selected){
+        alert('ابتدا یک بلوک را انتخاب کنید.');
+        return;
+      }
+      const id=selected.userData.id;
+      const prev=selected.name;
+      const next=(renameInput.value||'').trim();
+      if(!next){
+        alert('نام جدید معتبر نیست.');
+        return;
+      }
+      if(prev===next) return;
+      cmdRename(id,next);
+      pushAction({type:'rename', id, prevName:prev, nextName:next});
+    };
+
+    /* باز و بسته‌کردن لیست بلوک‌ها در موبایل */
+    const blockPanel = document.getElementById('blockPanel');
+    const toggleListBtn = document.getElementById('toggleListBtn');
+    if (toggleListBtn && blockPanel){
+      const isMobileList = window.matchMedia('(max-width: 768px)').matches;
+      if(isMobileList){
+        blockPanel.style.display = 'none';
+      }
+      toggleListBtn.addEventListener('click', ()=>{
+        const hidden = blockPanel.style.display === 'none';
+        blockPanel.style.display = hidden ? 'block' : 'none';
+      });
+    }
+
+    /* Picking */
+    const raycaster=new THREE.Raycaster();
+    const pointer=new THREE.Vector2();
+    const setPointer=e=>{
+      const r=renderer.domElement.getBoundingClientRect();
+      pointer.set(
+        (e.clientX-r.left)/r.width*2-1,
+        -((e.clientY-r.top)/r.height*2-1)
+      );
+    };
+    function pickBlock(){
+      raycaster.setFromCamera(pointer,camera);
+      const hits=raycaster.intersectObjects(blocks,true);
+      if(!hits.length) return null;
+      let o=hits[0].object;
+      while(o && !blocks.includes(o)) o=o.parent;
+      return o;
+    }
+
+    /* تشخیص اینکه موس روی پلان کوچک است یا نه */
+    function isPointerInMiniPlan(e){
+      const rect = renderer.domElement.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+
+      const size   = Math.min(w,h) * PLAN_REL_SIZE;
+      const margin = PLAN_MARGIN;
+
+      const x = e.clientX - rect.left;
+      const yTop = e.clientY - rect.top;
+      const yBottom = h - yTop;
+
+      return (
+        x >= margin && x <= margin + size &&
+        yBottom >= margin && yBottom <= margin + size
+      );
+    }
+
+    /* انتخاب با کلیک (Ctrl برای چندانتخابی) */
+    renderer.domElement.addEventListener('pointerdown',e=>{
+      const inPlanRegion = showPlanFull || isPointerInMiniPlan(e);
+
+      planControls.enabled = inPlanRegion;
+      if (!tctrl.dragging) {
+        orbit.enabled = !inPlanRegion;
+      }
+
+      if (inPlanRegion){
+        return;
+      }
+
+      if (showPlanFull) return;
+
+      setPointer(e);
+      if(tctrl.axis||tctrl.dragging) return;
+
+      const hit = pickBlock();
+      const additive = e.ctrlKey || e.metaKey;
+
+      if(hit){
+        selectObject(hit, additive);
+      }else if(!additive){
+        selectObject(null);
+      }
+    });
+
+    /* کنترل‌های خورشید + باز/بسته کارت‌ها */
+    const elevRange=document.getElementById('elevRange');
+    const elevNum=document.getElementById('elevNum');
+    const azRange=document.getElementById('azRange');
+    const azNum=document.getElementById('azNum');
+
+    const syncSunInputs=()=>{
+      elevRange.value=elevDeg;
+      elevNum.value=elevDeg;
+      azRange.value=azimDeg;
+      azNum.value=azimDeg;
+    };
+    const onSunChange=()=>setSunAngles(+elevNum.value, +azNum.value);
+
+    elevRange.addEventListener('input',()=>{
+      elevNum.value=elevRange.value;
+      onSunChange();
+    });
+    elevNum.addEventListener('change',()=>{
+      elevRange.value=elevNum.value;
+      onSunChange();
+    });
+    azRange.addEventListener('input',()=>{
+      azNum.value=azRange.value;
+      onSunChange();
+    });
+    azNum.addEventListener('change',()=>{
+      azRange.value=azNum.value;
+      onSunChange();
+    });
+
+    document.querySelectorAll('.presetbar button').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        setSunAngles(+btn.dataset.e, +btn.dataset.a);
+        syncSunInputs();
+      });
+    });
+    syncSunInputs();
+
+    const sunOnOffBtn = document.getElementById('sunOnOffBtn');
+    let sunEnabled = false;
+
+    if(sunOnOffBtn){
+      sunlight.intensity = 0.0;
+      ambient.intensity = 1.0;
+      sunOnOffBtn.textContent = 'روشن';
+
+      sunOnOffBtn.addEventListener('click', ()=>{
+        sunEnabled = !sunEnabled;
+        if(sunEnabled){
+          sunlight.intensity = 1.1;
+          ambient.intensity = 0.25;
+          sunOnOffBtn.textContent = 'خاموش';
+        }else{
+          sunlight.intensity = 0.0;
+          ambient.intensity = 1.0;
+          sunOnOffBtn.textContent = 'روشن';
+        }
+      });
+    }
+
+    // کارت‌های خورشید و خروجی: از اول بسته
+    const sunCard   = document.getElementById('sunCard');
+    const sunToggle = document.getElementById('sunToggle');
+    const renderCard   = document.getElementById('renderPanel');
+    const renderToggle = document.getElementById('renderToggle');
+
+    sunCard.classList.add('collapsed');
+    renderCard.classList.add('collapsed');
+
+    sunToggle.addEventListener('click',()=>{
+      sunCard.classList.toggle('collapsed');
+    });
+    renderToggle.addEventListener('click',()=>{
+      renderCard.classList.toggle('collapsed');
+    });
+
+    /* جهت‌های دوربین سه‌بعدی (در موبایل به خاطر CSS نمایش داده نمی‌شود) */
+    const viewBar=document.getElementById('viewBar');
+    function flyCamera(toPos,toTarget,dur=600){
+      const fromPos=camera.position.clone();
+      const fromTgt=orbit.target.clone();
+      camTween={
+        t0:performance.now(),
+        dur,
+        fromPos,
+        toPos,
+        fromTgt,
+        toTarget
+      };
+      orbit.enabled=false;
+    }
+    function flyToDirection(dir){
+      const tgt=orbit.target.clone();
+      const dist=camera.position.distanceTo(tgt);
+      const h=Math.max(camera.position.y,6);
+      const off=new THREE.Vector3(
+        dir==='east'?dist:dir==='west'?-dist:0,
+        h,
+        dir==='north'?dist:dir==='south'?-dist:0
+      );
+      flyCamera(new THREE.Vector3().addVectors(tgt,off), tgt, 600);
+    }
+    viewBar.addEventListener('click',e=>{
+      const btn=e.target.closest('button[data-dir]');
+      if(btn) flyToDirection(btn.dataset.dir);
+    });
+
+    /* وایرفریم سراسری */
+    const wireframeBtn = document.getElementById('wireframeBtn');
+    let wireframeEnabled = false;
+
+    function setGlobalWireframe(enabled){
+      wireframeEnabled = enabled;
+
+      scene.traverse(obj=>{
+        if(obj.isMesh && obj.userData && obj.userData.isBlockPart){
+          obj.material.wireframe = enabled;
+          obj.material.needsUpdate = true;
+        }
+      });
+
+      if (wireframeBtn){
+        wireframeBtn.style.borderColor = enabled ? '#5eead4' : '#2b2f4a';
+      }
+    }
+
+    if (wireframeBtn){
+      wireframeBtn.addEventListener('click', ()=>{
+        setGlobalWireframe(!wireframeEnabled);
+      });
+    }
+
+    /* Apply color */
+    const colorInput=document.getElementById('colorInput');
+    const hexInput=document.getElementById('hexInput');
+    const applyColorBtn=document.getElementById('applyColorBtn');
+    colorInput.addEventListener('input',()=>{
+      hexInput.value=colorInput.value;
+    });
+    hexInput.addEventListener('change',()=>{
+      const v=(hexInput.value||'').trim();
+      if(/^#([0-9a-fA-F]{6})$/.test(v))
+        colorInput.value=v;
+      else
+        hexInput.value=colorInput.value;
+    });
+    function getBlockHexColor(block){
+      let hex='#27e1c1';
+      block.traverse(c=>{
+        if(c.isMesh&&c.material&&c.material.color)
+          hex='#'+c.material.color.getHexString();
+      });
+      return hex;
+    }
+    function setBlockColor(block, hex){
+      const col = new THREE.Color(hex);
+      block.traverse(c=>{
+        if(c.isMesh && c.material){
+          if(!c.userData.normalMaterial){
+            c.userData.normalMaterial = c.material;
+          }
+          c.userData.normalMaterial.color.copy(col);
+          c.userData.normalMaterial.needsUpdate = true;
+
+          if (c.userData.planMaterial){
+            c.userData.planMaterial.color.copy(col);
+            c.userData.planMaterial.needsUpdate = true;
+          }
+
+          if (!showPlanFull){
+            c.material = c.userData.normalMaterial;
+          }
+        }
+      });
+    }
+
+    applyColorBtn.onclick = () => {
+  // هیچ بلوکی انتخاب نشده
+  if (!selected && (!selectedBlocks || selectedBlocks.size === 0)) {
+    alert('ابتدا یک بلوک را انتخاب کنید.');
+    return;
+  }
+
+  const next = colorInput.value || '#27e1c1';
+
+  // لیست هدف‌ها: اگر چندتا انتخاب شده، همه؛ وگرنه فقط selected
+  const targets = (selectedBlocks && selectedBlocks.size > 0)
+    ? Array.from(selectedBlocks)
+    : (selected ? [selected] : []);
+
+  let changedAny = false;
+
+  targets.forEach(b => {
+    const id   = b.userData.id;
+    const prev = getBlockHexColor(b);
+
+    if (prev.toLowerCase() === next.toLowerCase()) {
+      return; // این یکی از قبل همین رنگه
+    }
+
+    cmdRecolor(id, next);
+    pushAction({
+      type: 'recolor',
+      id,
+      prevHex: prev,
+      nextHex: next
+    });
+    changedAny = true;
+  });
+
+  if (changedAny) {
+    updateHistoryButtons();
+  }
+};
+
+
+    /* مدیریت طبقات پلان */
+    function refreshPlanFloors(){
+      const floorSet = new Set();
+
+      blocks.forEach(b=>{
+        const fi = getBlockFloorIndex(b);
+        b.userData.floorIndex = fi;
+        floorSet.add(fi);
+      });
+
+      const floors = Array.from(floorSet).sort((a,b)=>a-b);
+      planFloorSelect.innerHTML = '';
+
+      if(!floors.length){
+        const opt = document.createElement('option');
+        opt.value = '0';
+        opt.textContent = '0';
+        planFloorSelect.appendChild(opt);
+        currentPlanFloor = 0;
+        return;
+      }
+
+      if(!floors.includes(currentPlanFloor)){
+        currentPlanFloor = floors[0];
+      }
+
+      floors.forEach(fi=>{
+        const opt = document.createElement('option');
+        opt.value = fi;
+        opt.textContent = (fi + 1).toString();
+        if(fi === currentPlanFloor) opt.selected = true;
+        planFloorSelect.appendChild(opt);
+      });
+    }
+
+    planFloorSelect.addEventListener('change', ()=>{
+      currentPlanFloor = parseInt(planFloorSelect.value, 10) || 0;
+    });
+
+    /* مخفی‌کردن سقف و فیلتر طبقات فقط در پلان */
+    function setPlanHiddenSurfaces(isPlan){
+      if (!isPlan){
+        scene.traverse(obj=>{
+          if(obj.userData && obj.userData.hideInPlan){
+            obj.visible = true;
+          }
+        });
+        blocks.forEach(b => { b.visible = true; });
+        return;
+      }
+
+      scene.traverse(obj=>{
+        if(obj.userData && obj.userData.hideInPlan){
+          obj.visible = false;
+        }
+      });
+
+      blocks.forEach(b=>{
+        const fi = (typeof b.userData.floorIndex === 'number')
+          ? b.userData.floorIndex
+          : getBlockFloorIndex(b);
+        b.userData.floorIndex = fi;
+        b.visible = (fi === currentPlanFloor);
+      });
+    }
+
+    /* متریال هاشور برای پلان روشن/خاموش */
+    function setPlanHatching(enable){
+      scene.traverse(obj=>{
+        if (obj.isMesh && obj.userData && obj.userData.isBlockPart){
+          if (!obj.userData.normalMaterial){
+            obj.userData.normalMaterial = obj.material;
+          }
+
+          if (enable){
+            if (!obj.userData.planMaterial){
+              const baseColor = obj.userData.normalMaterial.color.clone();
+              obj.userData.planMaterial = new THREE.MeshBasicMaterial({
+                color: baseColor,
+                map: hatchTex,
+                transparent: true,
+                opacity: 0.7
+              });
+            } else {
+              obj.userData.planMaterial.color.copy(obj.userData.normalMaterial.color);
+            }
+            obj.material = obj.userData.planMaterial;
+          } else {
+            if (obj.userData.normalMaterial){
+              obj.material = obj.userData.normalMaterial;
+            }
+          }
+        }
+      });
+    }
+
+    /* کنترل پلان: سوییچ + زوم */
+    const planToggleBtn = document.getElementById('planToggleBtn');
+    const planZoomInBtn = document.getElementById('planZoomIn');
+    const planZoomOutBtn = document.getElementById('planZoomOut');
+
+    planToggleBtn.addEventListener('click', ()=>{
+      showPlanFull = !showPlanFull;
+      planToggleBtn.textContent = showPlanFull ? '👁 سه‌بعدی' : '👁 پلان کوچک';
+      if (showPlanFull){
+        tctrl.detach();
+        updateCoords(null);
+        orbit.enabled = false;
+        planControls.enabled = true;
+      }else{
+        planControls.enabled = false;
+        orbit.enabled = true;
+        if(selected){
+          selectObject(selected, false);
+        }
+      }
+    });
+
+    planZoomInBtn.addEventListener('click', ()=>{
+      applyPlanZoom(planZoom * 1.25);
+    });
+
+    planZoomOutBtn.addEventListener('click', ()=>{
+      applyPlanZoom(planZoom / 1.25);
+    });
+
+    /* زوم پلان با ویل موس */
+    renderer.domElement.addEventListener('wheel',(e)=>{
+      if (showPlanFull || isPointerInMiniPlan(e)){
+        e.preventDefault();
+        const scale = Math.exp(-e.deltaY * 0.001);
+        applyPlanZoom(planZoom * scale);
+      }
+    }, { passive:false });
+
+    /* رندر دو نما (اصلی + پلان) با خاموش کردن سایه و خورشید در پلان */
+    function renderViews(){
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      if (showPlanFull){
+        setPlanHiddenSurfaces(true);
+        setPlanHatching(true);
+
+        const prevShadow = renderer.shadowMap.enabled;
+        const prevSunIntensity = sunlight.intensity;
+        const prevAmbientIntensity = ambient.intensity;
+
+        renderer.shadowMap.enabled = false;
+        sunlight.intensity = 0.0;
+        ambient.intensity = 1.0;
+
+        renderer.setViewport(0,0,w,h);
+        renderer.setScissor(0,0,w,h);
+        renderer.setScissorTest(true);
+        renderer.render(scene, planCamera);
+        renderer.setScissorTest(false);
+
+        renderer.shadowMap.enabled = prevShadow;
+        sunlight.intensity = prevSunIntensity;
+        ambient.intensity = prevAmbientIntensity;
+
+        setPlanHatching(false);
+        setPlanHiddenSurfaces(false);
+        return;
+      }
+
+      // ۱) نمای سه‌بعدی با سایه و خورشید
+      setPlanHiddenSurfaces(false);
+      setPlanHatching(false);
+      renderer.shadowMap.enabled = true;
+      renderer.setViewport(0,0,w,h);
+      renderer.setScissor(0,0,w,h);
+      renderer.setScissorTest(true);
+      renderer.render(scene, camera);
+
+      // ۲) پلان کوچک، بدون خورشید و با هاشور
+      const size   = Math.min(w,h) * PLAN_REL_SIZE;
+      const margin = PLAN_MARGIN;
+      const vpX = margin;
+      const vpY = margin;
+
+      setPlanHiddenSurfaces(true);
+      setPlanHatching(true);
+
+      const prevShadow = renderer.shadowMap.enabled;
+      const prevSunIntensity = sunlight.intensity;
+      const prevAmbientIntensity = ambient.intensity;
+
+      renderer.shadowMap.enabled = false;
+      sunlight.intensity = 0.0;
+      ambient.intensity = 1.0;
+
+      renderer.setViewport(vpX,vpY,size,size);
+      renderer.setScissor(vpX,vpY,size,size);
+      renderer.setScissorTest(true);
+      renderer.render(scene, planCamera);
+      renderer.setScissorTest(false);
+
+      renderer.shadowMap.enabled = prevShadow;
+      sunlight.intensity = prevSunIntensity;
+      ambient.intensity = prevAmbientIntensity;
+
+      setPlanHatching(false);
+      setPlanHiddenSurfaces(false);
+    }
+
+    /* ---------- خروجی گرفتن از ویو به صورت تصویر ---------- */
+    function captureImage(scale = 2, format = 'png', bgMode = 'solid') {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const width  = Math.floor(w * scale);
+      const height = Math.floor(h * scale);
+
+      const prevGridVisible   = grid.visible;
+      const prevTctrlVisible  = tctrl.visible;
+
+      const hiddenWires = [];
+      scene.traverse(obj => {
+        if (obj.name === '__wf__') {
+          hiddenWires.push(obj);
+          obj.visible = false;
+        }
+      });
+
+      grid.visible  = false;
+      tctrl.visible = false;
+
+      const alpha = (bgMode === 'transparent');
+      const exportRenderer = new THREE.WebGLRenderer({
+        antialias: true,
+        preserveDrawingBuffer: true,
+        alpha
+      });
+
+      exportRenderer.setPixelRatio(1);
+      exportRenderer.setSize(width, height, false);
+      exportRenderer.shadowMap.enabled = true;
+      exportRenderer.shadowMap.type = THREE.VSMShadowMap;
+
+      if (bgMode === 'transparent'){
+        exportRenderer.setClearColor(0x000000, 0);
+      }else{
+        exportRenderer.setClearColor(0xbcd2e8, 1);
+      }
+
+      const cam = showPlanFull ? planCamera : camera;
+
+      if (showPlanFull) {
+        setPlanHiddenSurfaces(true);
+        setPlanHatching(true);
+
+        const prevSun = sunlight.intensity;
+        const prevAmb = ambient.intensity;
+        sunlight.intensity = 0.0;
+        ambient.intensity = 1.0;
+
+        exportRenderer.render(scene, cam);
+
+        sunlight.intensity = prevSun;
+        ambient.intensity = prevAmb;
+
+        setPlanHatching(false);
+        setPlanHiddenSurfaces(false);
+      } else {
+        exportRenderer.render(scene, cam);
+      }
+
+      let mime = 'image/png';
+      let ext  = 'png';
+      if (format === 'jpg'){
+        mime = 'image/jpeg';
+        ext  = 'jpg';
+      }
+
+      const dataURL = exportRenderer.domElement.toDataURL(mime, 0.95);
+      const link = document.createElement('a');
+      link.href = dataURL;
+      link.download = 'chidemana-view.'+ext;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      exportRenderer.dispose();
+
+      grid.visible  = prevGridVisible;
+      tctrl.visible = prevTctrlVisible;
+      hiddenWires.forEach(obj => { obj.visible = true; });
+    }
+
+    const renderDoBtn   = document.getElementById('renderDoBtn');
+    const renderScaleEl = document.getElementById('renderScale');
+    const renderFormatEl = document.getElementById('renderFormat');
+    const renderBGEl     = document.getElementById('renderBG');
+
+    if (renderDoBtn){
+      renderDoBtn.addEventListener('click', ()=>{
+        const scale  = parseFloat(renderScaleEl.value || '2') || 2;
+        const format = (renderFormatEl.value || 'png').toLowerCase();
+        const bgMode = (renderBGEl.value || 'solid');
+        captureImage(scale, format, bgMode);
+      });
+    }
+
+    /* Resize + Loop */
+    window.addEventListener('resize',()=>{
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      camera.aspect = w/h;
+      camera.updateProjectionMatrix();
+
+      updatePlanCameraFrustum();
+
+      renderer.setSize(w,h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    });
+
+    function animate(){
+      const now=performance.now();
+      if(camTween){
+        const k=Math.min(1,(now-camTween.t0)/camTween.dur);
+        const s=easeInOutQuad(k);
+        camera.position.lerpVectors(camTween.fromPos,camTween.toPos,s);
+        orbit.target.lerpVectors(camTween.fromTgt,camTween.toTarget,s);
+        if(k>=1){
+          camTween=null;
+          orbit.enabled=true;
+        }
+      }
+      orbit.update();
+      planControls.update();
+
+      // به‌روزرسانی جهت فلش شمال نسبت به دوربین
+const northIndicator = document.getElementById('northIndicator');
+if (northIndicator){
+  const worldNorth = new THREE.Vector3(0, 0, 1);
+  const camQuatInv = camera.quaternion.clone().invert();
+  const northInCamera = worldNorth.clone().applyQuaternion(camQuatInv);
+
+  const angleRad = Math.atan2(northInCamera.x, northInCamera.y);
+  const angleDeg = -THREE.MathUtils.radToDeg(angleRad) + 180;
+
+  northIndicator.style.setProperty('--north-rot', angleDeg + 'deg');
+}
+
+
+      renderViews();
+      requestAnimationFrame(animate);
+    }
+
+    refreshPlanFloors();
+    animate();
+    updateHistoryButtons();
+  </script>
+</body>
+</html>
